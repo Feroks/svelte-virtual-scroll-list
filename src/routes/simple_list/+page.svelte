@@ -7,11 +7,11 @@
     const getItemId = createSequenceGenerator()
     const getNotificationId = createSequenceGenerator()
 
-    let items = []
+    let items = $state([])
     addItems(1000)
 
-    let list
-    let notifications = {}
+    let list = $state()
+    let notifications = $state({})
 
     function addItems(count = 10) {
         let new_items = []
@@ -34,21 +34,26 @@
             bind:this={list}
             data={items}
             key="uniqueKey"
-            let:data
-            on:bottom={() => addNotification("bottom")}
-            on:top={() => addNotification("top")}
+            onbottom={() => addNotification("bottom")}
+            ontop={() => addNotification("top")}
     >
-        <div slot="header">
-            This is a header set via slot
-        </div>
-        <TestItem {...data}/>
-        <div slot="footer">
-            This is a footer set via slot
-        </div>
+        {#snippet header()}
+            <div >
+                This is a header set via slot
+            </div>
+        {/snippet}
+        {#snippet children({ data })}
+            <TestItem {...data}/>
+        {/snippet}
+        {#snippet footer()}
+            <div >
+                This is a footer set via slot
+            </div>
+        {/snippet}
     </VirtualScroll>
 </div>
-<button on:click={() => list.scrollToOffset(0)}>To top</button>
-<button on:click={list.scrollToBottom}>To bottom</button>
+<button onclick={() => list.scrollToOffset(0)}>To top</button>
+<button onclick={list.scrollToBottom}>To bottom</button>
 <div>
     {#each Object.entries(notifications) as [id, action] (id)}
         <div animate:flip>{action} </div>

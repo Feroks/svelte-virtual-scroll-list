@@ -6,10 +6,10 @@
 
     const getItemId = createSequenceGenerator()
 
-    let items = []
+    let items = $state([])
     addItems(true, 100)
 
-    let list
+    let list = $state()
 
     function addItems(top = true, count = 10) {
         let new_items = []
@@ -26,27 +26,32 @@
             bind:this={list}
             data={items}
             key="uniqueKey"
-            let:data
     >
-        <div slot="header">
-            This is a header
-        </div>
-        <TestItem {...data}/>
-        <div slot="footer">
-            This is a footer
-        </div>
+        {#snippet header()}
+            <div >
+                This is a header
+            </div>
+        {/snippet}
+        {#snippet children({ data })}
+            <TestItem {...data}/>
+        {/snippet}
+        {#snippet footer()}
+            <div >
+                This is a footer
+            </div>
+        {/snippet}
     </VirtualScroll>
 </div>
-<button on:click={addItems}>Add 10 to top</button>
-<button on:click={() => addItems(false)}>Add 10 to bottom</button>
-<button on:click={list.scrollToBottom}>To bottom</button>
-<button on:click={async () => {
+<button onclick={addItems}>Add 10 to top</button>
+<button onclick={() => addItems(false)}>Add 10 to bottom</button>
+<button onclick={list.scrollToBottom}>To bottom</button>
+<button onclick={async () => {
         addItems(false, 1)
         await tick()
         list.scrollToBottom()
     }}>Add 1 and scroll to bottom
 </button>
-<button on:click={()=>items[15].height = randomInteger(10, 150)}>Random height for 15 item</button>
+<button onclick={()=>items[15].height = randomInteger(10, 150)}>Random height for 15 item</button>
 
 
 <style>

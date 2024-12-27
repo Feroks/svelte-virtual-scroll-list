@@ -7,9 +7,9 @@
     const getItemId = createSequenceGenerator()
 
     let loading = false
-    let items = itemsFactory(70)
+    let items = $state(itemsFactory(70))
 
-    let list
+    let list = $state()
 
     function itemsFactory(count = 10) {
         let new_items = []
@@ -40,7 +40,7 @@
         } else {
             items = [...items, ...new_items]
 
-            // timeout needs because sometimes when you scroll down `scroll` event fires twice
+             // timeout needs because sometimes when you scroll down `scroll` event fires twice
             // and changes list.virtual.direction from BEHIND to FRONT
             // maybe there is a better solution
             setTimeout(() => list.scrollToOffset(list.getOffset() + 1), 3)
@@ -54,22 +54,27 @@
             bind:this={list}
             data={items}
             key="uniqueKey"
-            let:data
-            on:bottom={() => asyncAddItems(false)}
-            on:top={() => asyncAddItems()}
+            onbottom={() => asyncAddItems(false)}
+            ontop={() => asyncAddItems()}
             start={30}
     >
-        <div slot="header">
-            Loading...
-        </div>
-        <TestItem {...data}/>
-        <div slot="footer">
-            loading...
-        </div>
+        {#snippet header()}
+            <div >
+                Loading...
+            </div>
+        {/snippet}
+        {#snippet children({ data })}
+            <TestItem {...data}/>
+        {/snippet}
+        {#snippet footer()}
+            <div >
+                loading...
+            </div>
+        {/snippet}
     </VirtualScroll>
 </div>
-<button on:click={() => list.scrollToOffset(0)}>To Top</button>
-<button on:click={list.scrollToBottom}>To bottom</button>
+<button onclick={() => list.scrollToOffset(0)}>To Top</button>
+<button onclick={list.scrollToBottom}>To bottom</button>
 
 <style>
     .vs {

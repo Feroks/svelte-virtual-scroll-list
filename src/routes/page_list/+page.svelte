@@ -5,10 +5,10 @@
 
     const getItemId = createSequenceGenerator()
 
-    let items = []
+    let items = $state([])
     addItems(true, 1000)
 
-    let list
+    let list = $state()
 
     function addItems(top = true, count = 10) {
         let new_items = []
@@ -21,24 +21,29 @@
     }
 </script>
 <div class="overflow-buttons">
-    <button on:click={() => list.scrollToOffset(0)}>To top</button>
-    <button on:click={list.scrollToBottom}>To bottom</button>
+    <button onclick={() => list.scrollToOffset(0)}>To top</button>
+    <button onclick={list.scrollToBottom}>To bottom</button>
 </div>
 <div class="vs">
     <VirtualScroll
             bind:this={list}
             data={items}
             key="uniqueKey"
-            let:data
             pageMode={true}
     >
-        <div slot="header">
-            This is a header
-        </div>
-        <TestItem {...data}/>
-        <div slot="footer">
-            This is a footer
-        </div>
+        {#snippet header()}
+            <div >
+                This is a header
+            </div>
+        {/snippet}
+        {#snippet children({ data })}
+            <TestItem {...data}/>
+        {/snippet}
+        {#snippet footer()}
+            <div >
+                This is a footer
+            </div>
+        {/snippet}
     </VirtualScroll>
 </div>
 

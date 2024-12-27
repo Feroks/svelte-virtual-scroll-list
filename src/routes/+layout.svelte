@@ -1,7 +1,14 @@
 <script>
-    import {page} from "$app/stores"
+    import {page} from "$app/state"
     import "../app.css"
 
+    /**
+     * @typedef {Object} Props
+     * @property {import('svelte').Snippet} [children]
+     */
+
+    /** @type {Props} */
+    let { children } = $props();
 
     const pages = [
         {name: "Simple list", component: "simple_list"},
@@ -11,13 +18,11 @@
         {name: "ChangeableData", component: "changable_data"},
         {name: "SimpleListStore", component: "list_store"},
     ]
-    let current_path = ""
-    function get_path(page) {
+
+    let current_path = $derived.by(() => {
         const route_parts = page.route.id.split("/")
         return route_parts[route_parts.length - 1]
-    }
-    $: current_path = get_path($page)
-
+    });
 </script>
 
 <svelte:head>
@@ -37,7 +42,7 @@
         {/each}
         <a class="source" href="https://github.com/v1ack/svelte-virtual-scroll-list/tree/master/src/routes/{current_path}">Source</a>
     </div>
-    <slot></slot>
+    {@render children?.()}
 </main>
 
 <style>

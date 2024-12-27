@@ -1,15 +1,28 @@
 <script>
-    import {afterUpdate, createEventDispatcher, onDestroy, onMount} from "svelte"
+    import {onDestroy, onMount} from "svelte"
 
-    export let horizontal = false
-    export let uniqueKey
-    export let type = "item"
+    /**
+     * @typedef {Object} Props
+     * @property {string} uniqueKey
+     * @property {boolean} [horizontal]
+     * @property {string} [type]
+     * @property {import('svelte').Snippet} [children]
+     * @property {(param: {id: string, size: number, type: string}) => void} [onresize]
+     */
+
+    /** @type {Props} */
+    let {
+        horizontal = false,
+        uniqueKey,
+        type = "item",
+        children,
+        onresize
+    } = $props();
 
     let resizeObserver
     let itemDiv
     let previousSize
 
-    const dispatch = createEventDispatcher()
     const shapeKey = horizontal ? "offsetWidth" : "offsetHeight"
 
     onMount(() => {
@@ -18,7 +31,7 @@
             resizeObserver.observe(itemDiv)
         }
     })
-    afterUpdate(dispatchSizeChange)
+    $effect(dispatchSizeChange)
     onDestroy(() => {
         if (resizeObserver) {
             resizeObserver.disconnect()
@@ -30,10 +43,10 @@
         const size = itemDiv ? itemDiv[shapeKey] : 0
         if (size === previousSize) return
         previousSize = size
-        dispatch("resize", {id: uniqueKey, size, type})
+        onresize?.({id: uniqueKey, size, type});
     }
 </script>
 
 <div bind:this={itemDiv} class="virtual-scroll-item">
-    <slot/>
+    {@render children?.()}
 </div>

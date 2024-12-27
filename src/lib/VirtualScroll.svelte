@@ -1,59 +1,50 @@
 <script>
-    import Virtual, {isBrowser} from "./virtual"
+    import Virtual, {isBrowser} from "./virtual.js"
     import Item from "./Item.svelte"
-    import {createEventDispatcher, onDestroy, onMount} from "svelte"
+    import {onDestroy, onMount} from "svelte"
 
     /**
-     * Unique key for getting data from `data`
-     * @type {string}
+     * @typedef {Object} Props
+     * @property {string} [key] - Unique key for getting data from `data`
+     * @property {Array<any>} data - Source for list
+     * @property {number} [keeps] - Count of rendered items
+     * @property {number} [estimateSize] - Estimate size of each item, needs for smooth scrollbar
+     * @property {boolean} [isHorizontal] - Scroll direction
+     * @property {number|undefined} [start] - scroll position start index
+     * @property {number|undefined} [offset] - scroll position offset
+     * @property {boolean} [pageMode] - Let virtual list using global document to scroll through the list
+     * @property {number} [topThreshold] - The threshold to emit `top` event, attention to multiple calls.
+     * @property {number} [bottomThreshold] - The threshold to emit `bottom` event, attention to multiple calls.
+     * @property {import('svelte').Snippet} [header]
+     * @property {import('svelte').Snippet<[any]>} [children]
+     * @property {import('svelte').Snippet} [footer]
+     * @property {(param: *) => void} [onscroll]
+     * @property {() => void} [ontop]
+     * @property {() => void} [onbottom]
      */
-    export let key = "id"
-    /**
-     * Source for list
-     * @type {Array<any>}
-     */
-    export let data
-    /**
-     * Count of rendered items
-     * @type {number}
-     */
-    export let keeps = 30
-    /**
-     * Estimate size of each item, needs for smooth scrollbar
-     * @type {number}
-     */
-    export let estimateSize = 50
-    /**
-     * Scroll direction
-     * @type {boolean}
-     */
-    export let isHorizontal = false
-    /**
-     * scroll position start index
-     */
-    export let start = 0
-    /**
-     * scroll position offset
-     */
-    export let offset = 0
-    /**
-     * Let virtual list using global document to scroll through the list
-     * @type {boolean}
-     */
-    export let pageMode = false
-    /**
-     * The threshold to emit `top` event, attention to multiple calls.
-     * @type {number}
-     */
-    export let topThreshold = 0
-    /**
-     * The threshold to emit `bottom` event, attention to multiple calls.
-     * @type {number}
-     */
-    export let bottomThreshold = 0
 
-    let displayItems = []
-    let paddingStyle
+    /** @type {Props} */
+    let {
+        key = "id",
+        data,
+        keeps = 30,
+        estimateSize = 50,
+        isHorizontal = false,
+        start = undefined,
+        offset = $bindable(undefined),
+        pageMode = false,
+        topThreshold = 0,
+        bottomThreshold = 0,
+        header,
+        children,
+        footer,
+        onscroll,
+        ontop,
+        onbottom
+    } = $props();
+
+    let displayItems = $state([])
+    let paddingStyle = $state()
     let directionKey = isHorizontal ? "scrollLeft" : "scrollTop"
     let range = null
     let virtual = new Virtual({
@@ -64,9 +55,8 @@
         buffer: Math.round(keeps / 3), // recommend for a third of keeps
         uniqueIds: getUniqueIdFromDataSources(),
     }, onRangeChanged)
-    let root
-    let shepherd
-    const dispatch = createEventDispatcher()
+    let root = $state()
+    let shepherd = $state()
 
     /**
      * @type {(id: number) => number}
@@ -202,7 +192,7 @@
     }
 
     function onItemResized(event) {
-        const {id, size, type} = event.detail
+        const {id, size, type} = event
         if (type === "item")
             virtual.saveSize(id, size)
         else if (type === "slot") {
@@ -236,25 +226,27 @@
     }
 
     function emitEvent(offset, clientSize, scrollSize, event) {
-        dispatch("scroll", {event, range: virtual.getRange()})
+        onscroll?.({event, range: virtual.getRange()})
 
         if (virtual.isFront() && !!data.length && (offset - topThreshold <= 0)) {
-            dispatch("top")
+            ontop?.();
         } else if (virtual.isBehind() && (offset + clientSize + bottomThreshold >= scrollSize)) {
-            dispatch("bottom")
+            onbottom?.();
         }
     }
 
-    $: scrollToOffset(offset)
-    $: scrollToIndex(start)
-    $: handleKeepsChange(keeps)
+    $effect(() => {
+        if (offset) {
+            scrollToOffset(offset)
+        }
+    });
+    $effect(() => handleKeepsChange(keeps));
 
     function handleKeepsChange(keeps) {
         virtual.updateParam("keeps", keeps)
         virtual.handleSlotSizeChange()
     }
-
-    $: handleDataSourcesChange(data)
+    $effect.pre(() => { handleDataSourcesChange(data) });
 
     async function handleDataSourcesChange(data) {
         virtual.updateParam("uniqueIds", getUniqueIdFromDataSources())
@@ -262,26 +254,26 @@
     }
 </script>
 
-<div bind:this={root} on:scroll={onScroll} style="overflow-y: auto; height: inherit" class="virtual-scroll-root">
-    {#if $$slots.header}
-        <Item on:resize={onItemResized} type="slot" uniqueKey="header">
-            <slot name="header"/>
+<div bind:this={root} onscroll={onScroll} style="overflow-y: auto; height: inherit" class="virtual-scroll-root">
+    {#if header}
+        <Item onresize={onItemResized} type="slot" uniqueKey="header">
+            {@render header?.()}
         </Item>
     {/if}
     <div style="padding: {paddingStyle}" class="virtual-scroll-wrapper">
         {#each displayItems as dataItem, dataIndex (dataItem[key])}
             <Item
-                    on:resize={onItemResized}
+                    onresize={onItemResized}
                     uniqueKey={dataItem[key]}
                     horizontal={isHorizontal}
                     type="item">
-                <slot data={dataItem} index={dataIndex} />
+                {@render children?.({ data: dataItem, index: dataIndex, })}
             </Item>
         {/each}
     </div>
-    {#if $$slots.footer}
-        <Item on:resize={onItemResized} type="slot" uniqueKey="footer">
-            <slot name="footer"/>
+    {#if footer}
+        <Item onresize={onItemResized} type="slot" uniqueKey="footer">
+            {@render footer?.()}
         </Item>
     {/if}
     <div bind:this={shepherd} class="shepherd"

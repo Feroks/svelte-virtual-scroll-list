@@ -1,6 +1,5 @@
-<script>
-    export let uniqueKey
-    export let height
+<script lang="ts">
+    let { uniqueKey, height } = $props();
 </script>
 
 <div style="height: {height}px">

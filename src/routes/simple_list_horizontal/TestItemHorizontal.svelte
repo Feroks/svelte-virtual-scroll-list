@@ -1,6 +1,5 @@
-<script>
-    export let uniqueKey
-    export let width
+<script lang="ts">
+    let { uniqueKey, width } = $props();
 </script>
 
 <div style="width: {width}px">
